@@ -102,9 +102,16 @@ async def play_command(client: Client, message: Message):
     
     query = " ".join(message.command[1:])
     
+    # Send searching message
+    m = await message.reply_text(Strings.get_searching_msg(query))
+    
     # Optimized: Start music immediately, update thumbnail later
     details, error = await get_youtube_details(query)
     if error:
+        try:
+            await m.delete()
+        except:
+            pass
         error_text = Strings.get_error_msg(error)
         try:
             return await message.reply_text(error_text)
@@ -135,6 +142,10 @@ async def play_command(client: Client, message: Message):
         message_text = Strings.get_added_queue_msg(title=title, pos=pos, user=user_name, duration=duration, url=url)
         
         # Send response immediately
+        try:
+            await m.delete()
+        except:
+            pass
         await message.reply_photo(
             photo=Images.get_play_image(),
             caption=message_text,
@@ -169,6 +180,12 @@ async def play_command(client: Client, message: Message):
             
             # Use thumbnail if available, otherwise use default image
             photo_to_use = thumb_path if thumb_path and os.path.exists(thumb_path) else Images.get_play_image()
+            
+            # Delete searching message
+            try:
+                await m.delete()
+            except:
+                pass
             
             # Send single message with thumbnail and correct buttons
             try:
