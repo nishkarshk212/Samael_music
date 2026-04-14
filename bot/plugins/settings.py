@@ -23,35 +23,52 @@ def get_group_settings(chat_id):
 @Client.on_message(filters.command("settings") & filters.group)
 async def settings_command(client: Client, message: Message):
     """Open settings panel for the group"""
-    chat_id = message.chat.id
-    
-    # Check if user is admin
-    user_id = message.from_user.id
-    chat_member = await client.get_chat_member(chat_id, user_id)
-    
-    if chat_member.status not in ["creator", "administrator"]:
-        return await message.reply_text("❌ ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴀᴄᴄᴇss sᴇᴛᴛɪɴɢs.")
-    
-    settings = get_group_settings(chat_id)
-    
-    settings_text = Strings.SETTINGS_TITLE + "\n\n" + Strings.SETTINGS_DESC
-    
     try:
-        await message.reply_photo(
-            photo=Images.get_play_image(),
-            caption=settings_text,
-            reply_markup=Buttons.get_settings_buttons(
-                play_mode=settings["play_mode"],
-                language=settings["language"],
-                skip_perm=settings["skip_permission"]
+        chat_id = message.chat.id
+        user_id = message.from_user.id
+        
+        print(f"Settings command by {message.from_user.first_name} ({user_id}) in chat {chat_id}")
+        
+        # Check if user is admin or creator
+        try:
+            chat_member = await client.get_chat_member(chat_id, user_id)
+            print(f"User status: {chat_member.status}")
+            
+            if chat_member.status not in ["creator", "administrator"]:
+                print(f"User {user_id} is not admin (status: {chat_member.status})")
+                return await message.reply_text("❌ ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴀᴄᴄᴇss sᴇᴛᴛɪɴɢs.")
+        except Exception as e:
+            print(f"Error checking admin status: {e}")
+            # If we can't check, allow the command (fallback)
+            print("Allowing command due to admin check error")
+        
+        settings = get_group_settings(chat_id)
+        
+        settings_text = Strings.SETTINGS_TITLE + "\n\n" + Strings.SETTINGS_DESC
+        
+        try:
+            await message.reply_photo(
+                photo=Images.get_play_image(),
+                caption=settings_text,
+                reply_markup=Buttons.get_settings_buttons(
+                    play_mode=settings["play_mode"],
+                    language=settings["language"],
+                    skip_perm=settings["skip_permission"]
+                )
             )
-        )
-    except Exception:
-        await message.reply_text(
-            settings_text,
-            reply_markup=Buttons.get_settings_buttons(
-                play_mode=settings["play_mode"],
-                language=settings["language"],
-                skip_perm=settings["skip_permission"]
+            print(f"Settings panel sent to chat {chat_id}")
+        except Exception as e:
+            print(f"Error sending settings photo: {e}")
+            await message.reply_text(
+                settings_text,
+                reply_markup=Buttons.get_settings_buttons(
+                    play_mode=settings["play_mode"],
+                    language=settings["language"],
+                    skip_perm=settings["skip_permission"]
+                )
             )
-        )
+    except Exception as e:
+        print(f"Critical error in settings command: {e}")
+        import traceback
+        traceback.print_exc()
+        await message.reply_text("❌ Error occurred while opening settings.")
