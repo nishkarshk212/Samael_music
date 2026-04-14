@@ -10,6 +10,9 @@ from bot.buttons import Buttons
 from config import Config
 from pyrogram.types import InputMediaPhoto
 
+# Import settings storage
+from bot.plugins.settings import get_group_settings
+
 @Client.on_callback_query(filters.regex("pause"))
 async def pause_callback(client: Client, query: CallbackQuery):
     chat_id = query.message.chat.id
@@ -330,3 +333,155 @@ async def close_message_callback(client: Client, query: CallbackQuery):
         await query.message.delete()
     except Exception as e:
         print(f"Error in close callback: {e}")
+
+# Settings Panel Callbacks
+@Client.on_callback_query(filters.regex("^settings_panel$"))
+async def settings_panel_callback(client: Client, query: CallbackQuery):
+    """Open settings panel from command or button"""
+    chat_id = query.message.chat.id
+    settings = get_group_settings(chat_id)
+    
+    settings_text = Strings.SETTINGS_TITLE + "\n\n" + Strings.SETTINGS_DESC
+    
+    try:
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=Images.get_play_image(),
+                caption=settings_text
+            ),
+            reply_markup=Buttons.get_settings_buttons(
+                play_mode=settings["play_mode"],
+                language=settings["language"],
+                skip_perm=settings["skip_permission"]
+            )
+        )
+        await query.answer("⚙️ Settings Panel")
+    except Exception as e:
+        await query.answer("Error opening settings.", show_alert=True)
+
+@Client.on_callback_query(filters.regex("^toggle_play_mode$"))
+async def toggle_play_mode_callback(client: Client, query: CallbackQuery):
+    """Toggle between Audio and Video play mode"""
+    chat_id = query.message.chat.id
+    settings = get_group_settings(chat_id)
+    
+    # Toggle play mode
+    if settings["play_mode"] == "Audio":
+        settings["play_mode"] = "Video"
+    else:
+        settings["play_mode"] = "Audio"
+    
+    # Update the message with new settings
+    settings_text = Strings.SETTINGS_TITLE + "\n\n" + Strings.SETTINGS_DESC
+    
+    try:
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=Images.get_play_image(),
+                caption=settings_text
+            ),
+            reply_markup=Buttons.get_settings_buttons(
+                play_mode=settings["play_mode"],
+                language=settings["language"],
+                skip_perm=settings["skip_permission"]
+            )
+        )
+        await query.answer(Strings.PLAY_MODE_CHANGED.format(settings["play_mode"]))
+    except Exception as e:
+        await query.answer("Error updating play mode.", show_alert=True)
+
+@Client.on_callback_query(filters.regex("^toggle_language$"))
+async def toggle_language_callback(client: Client, query: CallbackQuery):
+    """Toggle between languages"""
+    chat_id = query.message.chat.id
+    settings = get_group_settings(chat_id)
+    
+    # Language options cycle
+    languages = ["English", "हिन्दी", "தமிழ்", "తెలుగు"]
+    current_index = languages.index(settings["language"]) if settings["language"] in languages else 0
+    next_index = (current_index + 1) % len(languages)
+    settings["language"] = languages[next_index]
+    
+    # Update the message with new settings
+    settings_text = Strings.SETTINGS_TITLE + "\n\n" + Strings.SETTINGS_DESC
+    
+    try:
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=Images.get_play_image(),
+                caption=settings_text
+            ),
+            reply_markup=Buttons.get_settings_buttons(
+                play_mode=settings["play_mode"],
+                language=settings["language"],
+                skip_perm=settings["skip_permission"]
+            )
+        )
+        await query.answer(Strings.LANGUAGE_CHANGED.format(settings["language"]))
+    except Exception as e:
+        await query.answer("Error updating language.", show_alert=True)
+
+@Client.on_callback_query(filters.regex("^toggle_skip_perm$"))
+async def toggle_skip_perm_callback(client: Client, query: CallbackQuery):
+    """Toggle skip permission between Admin Only and Everyone"""
+    chat_id = query.message.chat.id
+    settings = get_group_settings(chat_id)
+    
+    # Toggle skip permission
+    if settings["skip_permission"] == "Admin Only":
+        settings["skip_permission"] = "Everyone"
+    else:
+        settings["skip_permission"] = "Admin Only"
+    
+    # Update the message with new settings
+    settings_text = Strings.SETTINGS_TITLE + "\n\n" + Strings.SETTINGS_DESC
+    
+    try:
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=Images.get_play_image(),
+                caption=settings_text
+            ),
+            reply_markup=Buttons.get_settings_buttons(
+                play_mode=settings["play_mode"],
+                language=settings["language"],
+                skip_perm=settings["skip_permission"]
+            )
+        )
+        await query.answer(Strings.SKIP_PERM_CHANGED.format(settings["skip_permission"]))
+    except Exception as e:
+        await query.answer("Error updating skip permission.", show_alert=True)
+
+@Client.on_callback_query(filters.regex("^settings_auth_users$"))
+async def settings_auth_users_callback(client: Client, query: CallbackQuery):
+    """Show authorized users list"""
+    chat_id = query.message.chat.id
+    settings = get_group_settings(chat_id)
+    auth_users = settings.get("auth_users", [])
+    
+    if not auth_users:
+        auth_text = Strings.AUTH_USERS_TITLE + "\n\n" + Strings.AUTH_USERS_EMPTY
+    else:
+        auth_text = Strings.AUTH_USERS_TITLE + "\n\n"
+        auth_text += f"ᴛᴏᴛᴀʟ: {len(auth_users)} ᴜsᴇʀs\n\n"
+        for i, user_id in enumerate(auth_users[:10], 1):  # Show first 10
+            try:
+                user = await client.get_users(user_id)
+                auth_text += f"{i}. {user.mention}\n"
+            except:
+                auth_text += f"{i}. User ID: {user_id}\n"
+        
+        if len(auth_users) > 10:
+            auth_text += f"\n... ᴀɴᴅ {len(auth_users) - 10} ᴍᴏʀᴇ"
+    
+    try:
+        await query.message.edit_media(
+            media=InputMediaPhoto(
+                media=Images.get_play_image(),
+                caption=auth_text
+            ),
+            reply_markup=Buttons.get_back_button("settings_panel")
+        )
+        await query.answer("👥 Auth Users List")
+    except Exception as e:
+        await query.answer("Error showing auth users.", show_alert=True)

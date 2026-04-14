@@ -106,6 +106,59 @@ class Buttons:
         return keyboard
 
     @staticmethod
+    def get_settings_buttons(play_mode="Audio", language="English", skip_perm="Admin Only"):
+        """
+        Returns the inline keyboard for the settings panel.
+        """
+        # Play mode button with toggle
+        play_mode_icon = "🎵" if play_mode == "Audio" else "🎬"
+        play_mode_text = f"{play_mode_icon} {play_mode}"
+        
+        # Language button with toggle
+        lang_icon = "🌐"
+        language_text = f"{lang_icon} {language}"
+        
+        # Skip permission button
+        skip_icon = "👑" if skip_perm == "Admin Only" else "👥"
+        skip_text = f"{skip_icon} {skip_perm}"
+        
+        keyboard = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text=play_mode_text,
+                        callback_data="toggle_play_mode"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=language_text,
+                        callback_data="toggle_language"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=skip_text,
+                        callback_data="toggle_skip_perm"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="👥 Auth Users",
+                        callback_data="settings_auth_users"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text="✖️ Close",
+                        callback_data="close_message"
+                    )
+                ]
+            ]
+        )
+        return keyboard
+
+    @staticmethod
     def get_close_button():
         """
         Returns a single close button.
