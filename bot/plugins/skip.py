@@ -35,9 +35,15 @@ async def skip_command(client: Client, message: Message):
             skipped_text = Strings.get_skipped_msg(next_track['title'])
             try:
                 await message.reply_photo(photo=Images.get_play_image(), caption=skipped_text)
-            except Exception:
-                fallback_emoji_map = {Config.SKIP_EMOJI_ID: "⏭", Config.PLAYING_EMOJI_ID: "🎵"}
-                await message.reply_text(Strings.get_message_with_fallback(skipped_text, fallback_emoji_map))
+                print(f"✅ Skip message sent for: {next_track['title']}")
+            except Exception as e:
+                print(f"⚠️ Photo send failed in skip: {e}")
+                try:
+                    fallback_emoji_map = {Config.SKIP_EMOJI_ID: "⏭", Config.PLAYING_EMOJI_ID: "🎵"}
+                    await message.reply_text(Strings.get_message_with_fallback(skipped_text, fallback_emoji_map))
+                except Exception as e2:
+                    print(f"❌ Text fallback also failed: {e2}")
+                    await message.reply_text(f"⏭ Skipped!\n\n🎵 Now Playing: `{next_track['title']}`")
         except Exception as e:
             # Send custom error message to group
             try:
