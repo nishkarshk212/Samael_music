@@ -30,13 +30,13 @@ async def catch_all_private(client: Client, message: Message):
             bot_name = bot_me.first_name
             
             # Simple owner mention
-            owner_mention = f"tg://user?id={Config.OWNER_ID}"
+            owner_name_mention = f"[Owner](tg://user?id={Config.OWNER_ID})"
             
             # Format message
             start_text = Strings.PRIVATE_START_MSG.format(
                 user=f"[{user_name}](tg://user?id={user_id})", 
                 bot_name=f"[{bot_name}](tg://user?id={bot_me.id})",
-                owner=f"[Owner]({owner_mention})"
+                owner_name_mention=owner_name_mention
             )
             
             # Get buttons
