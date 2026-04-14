@@ -2,6 +2,35 @@ import yt_dlp
 import re
 import math
 import asyncio
+from functools import lru_cache
+
+# Cache for search results (cache up to 200 searches)
+@lru_cache(maxsize=200)
+def _cached_search(query):
+    """Synchronous cached search for faster repeated queries"""
+    ydl_opts = {
+        'quiet': True,
+        'skip_download': True,
+        'default_search': 'ytsearch1',
+        'no_warnings': True,
+        'extract_flat': False,
+    }
+    
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(query, download=False)
+    
+    if 'entries' in info:
+        video = info['entries'][0]
+    else:
+        video = info
+    
+    return {
+        'title': video.get('title', 'Unknown'),
+        'duration': video.get('duration', 0),
+        'url': video.get('webpage_url'),
+        'video_id': video.get('id'),
+        'artist': video.get('uploader', 'Unknown Artist')
+    }
 
 def _format_duration(seconds):
     if seconds is None or not isinstance(seconds, (int, float)):
@@ -14,73 +43,72 @@ def _format_duration(seconds):
 
 async def search_song(query):
     """
-    Search for a song and get its details using yt-dlp.
+    Search for a song and get its details using yt-dlp with caching.
     """
-    ydl_opts = {
-        'quiet': True,
-        'skip_download': True,
-        'default_search': 'ytsearch1',
-        'no_warnings': True,
-    }
-    
     loop = asyncio.get_event_loop()
-    def extract():
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            return ydl.extract_info(query, download=False)
-            
-    info = await loop.run_in_executor(None, extract)
+    # Use cached search for faster response
+    result = await loop.run_in_executor(None, lambda: _cached_search(query))
     
-    if 'entries' in info:
-        video = info['entries'][0]
-    else:
-        video = info
-        
-    title = video.get('title', 'Unknown')
-    duration_sec = video.get('duration', 0)
-    duration = _format_duration(duration_sec)
-    url = video.get('webpage_url')
-    video_id = video.get('id')
-    artist = video.get('uploader', 'Unknown Artist')
+    duration = _format_duration(result['duration'])
     
-    return title, duration, url, video_id, artist
+    return result['title'], duration, result['url'], result['video_id'], result['artist']
 
 async def get_youtube_details(query):
     """
-    Search for YouTube video and get stream URL.
+    Optimized: Search for YouTube video and get stream URL in parallel.
+    Uses single yt-dlp call with optimized format extraction.
     """
     try:
-        title, duration, url, video_id, artist = await search_song(query)
-        
-        # We still need the actual stream URL for pytgcalls
-        # Using yt-dlp to get the best audio format URL
+        # Optimized yt-dlp options - get both info and stream in one call
         ydl_opts = {
             'format': 'bestaudio/best',
             'quiet': True,
             'no_warnings': True,
+            'default_search': 'ytsearch1',
+            'socket_timeout': 10,
+            'retries': 2,
+            'fragment_retries': 2,
+            'extractor_retries': 2,
         }
         
         loop = asyncio.get_event_loop()
-        def extract_stream():
+        def extract():
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                return ydl.extract_info(url, download=False)
+                return ydl.extract_info(query, download=False)
         
-        info = await loop.run_in_executor(None, extract_stream)
-        stream_url = info.get('url')
+        info = await loop.run_in_executor(None, extract)
+        
+        # Handle search results
+        if 'entries' in info:
+            video = info['entries'][0]
+        else:
+            video = info
+        
+        title = video.get('title', 'Unknown')
+        duration_sec = video.get('duration', 0)
+        duration = _format_duration(duration_sec)
+        url = video.get('webpage_url')
+        video_id = video.get('id')
+        artist = video.get('uploader', 'Unknown Artist')
+        stream_url = video.get('url')
         
         if not stream_url:
             return None, "Could not extract stream URL."
-            
+        
+        # Run thumbnail download in parallel (don't wait for it)
         from bot.thumbnail import get_thumbnail
-        thumb_path = await get_thumbnail(video_id, title)
-            
+        thumbnail_task = asyncio.create_task(get_thumbnail(video_id, title))
+        
+        # Return immediately with stream_url
         return {
             "title": title, 
             "path": stream_url, 
             "duration": duration, 
             "artist": artist, 
-            "thumbnail": thumb_path,
+            "thumbnail": None,  # Will be set later
             "video_id": video_id,
-            "url": url
+            "url": url,
+            "_thumbnail_task": thumbnail_task  # Background task
         }, None
         
     except Exception as e:

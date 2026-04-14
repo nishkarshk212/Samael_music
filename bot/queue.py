@@ -34,3 +34,10 @@ def is_empty(chat_id):
     if chat_id not in queue:
         return True
     return len(queue[chat_id]) == 0
+
+def update_queue_thumbnail(chat_id, position, thumbnail_path):
+    """Update thumbnail for a specific queue item (1-indexed position)"""
+    if chat_id in queue and 0 < position <= len(queue[chat_id]):
+        queue[chat_id][position - 1]["thumbnail"] = thumbnail_path
+        return True
+    return False

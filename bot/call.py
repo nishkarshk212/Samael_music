@@ -7,8 +7,8 @@ from bot.strings import Strings
 from config import Config
 from pyrogram.errors import DocumentInvalid
 
-# Increased buffer and other parameters for better stability
-pytgcalls = PyTgCalls(assistant, workers=100)
+# Optimized: Increased workers for better concurrency and faster response
+pytgcalls = PyTgCalls(assistant, workers=200)
 
 @pytgcalls.on_update()
 async def on_update(client, update):

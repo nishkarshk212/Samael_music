@@ -1,4 +1,5 @@
 import os
+import asyncio
 from pyrogram import filters, Client
 from pyrogram.types import Message
 from bot.youtube import get_youtube_details
@@ -100,27 +101,23 @@ async def play_command(client: Client, message: Message):
         return await message.reply_text(Strings.PLAY_PROMPT_MSG)
     
     query = " ".join(message.command[1:])
-    searching_text = Strings.get_searching_msg(query)
-    try:
-        m = await message.reply_text(searching_text)
-    except Exception:
-        fallback_emoji_map = {Config.SEARCH_EMOJI_ID: "🔍"}
-        m = await message.reply_text(Strings.get_message_with_fallback(searching_text, fallback_emoji_map))
     
+    # Optimized: Start music immediately, update thumbnail later
     details, error = await get_youtube_details(query)
     if error:
         error_text = Strings.get_error_msg(error)
         try:
-            return await m.edit(error_text)
+            return await message.reply_text(error_text)
         except Exception:
             fallback_emoji_map = {Config.ERROR_EMOJI_ID: "❌"}
-            return await m.edit(Strings.get_message_with_fallback(error_text, fallback_emoji_map))
+            return await message.reply_text(Strings.get_message_with_fallback(error_text, fallback_emoji_map))
     
     title = details["title"]
     file_path = details["path"]
     duration = details["duration"]
     artist = details["artist"]
     url = details["url"]
+    thumbnail_task = details.pop("_thumbnail_task", None)
     
     if is_force:
         # Clear queue and stop current stream
@@ -131,21 +128,24 @@ async def play_command(client: Client, message: Message):
             pass
 
     if not queue_manager.is_empty(chat_id):
-        # Add to queue
-        pos = queue_manager.add_to_queue(chat_id, title, file_path, user_name, duration, artist, details.get("thumbnail"), url)
-        await m.delete()
+        # Add to queue - don't wait for thumbnail
+        pos = queue_manager.add_to_queue(chat_id, title, file_path, user_name, duration, artist, None, url)
         
         # Use the updated queue added message
         message_text = Strings.get_added_queue_msg(title=title, pos=pos, user=user_name, duration=duration, url=url)
         
-        # Use get_play_image for queue messages
+        # Send response immediately
         await message.reply_photo(
             photo=Images.get_play_image(),
             caption=message_text,
             reply_markup=Buttons.get_close_button()
         )
+        
+        # Update thumbnail in background if available
+        if thumbnail_task:
+            asyncio.create_task(_update_queue_thumbnail(chat_id, pos, thumbnail_task))
     else:
-        # Play directly
+        # Play immediately - optimized for speed
         try:
             if is_video:
                 await pytgcalls.play(chat_id, MediaStream(file_path, audio_parameters=AudioQuality.MEDIUM, video_parameters=VideoQuality.HD))
@@ -153,18 +153,16 @@ async def play_command(client: Client, message: Message):
                 await pytgcalls.play(chat_id, MediaStream(file_path, audio_parameters=AudioQuality.MEDIUM))
             
             # Add to queue as currently playing
-            queue_manager.add_to_queue(chat_id, title, file_path, user_name, duration, artist, details.get("thumbnail"), url)
+            queue_manager.add_to_queue(chat_id, title, file_path, user_name, duration, artist, None, url)
             message_text = Strings.get_streaming_started_msg(title=title, duration=duration, artist=user_name, url=url, is_video=is_video)
-            await m.delete()
             
             bot_me = await client.get_me()
             bot_username = bot_me.username
             
+            # Send response immediately with default image
             try:
-                # Use song thumbnail for playing message
-                photo = details.get("thumbnail") if details.get("thumbnail") and os.path.exists(details.get("thumbnail")) else Images.get_play_image()
                 await message.reply_photo(
-                    photo=photo, 
+                    photo=Images.get_play_image(), 
                     caption=message_text,
                     reply_markup=Buttons.get_playback_buttons(bot_username)
                 )
@@ -173,16 +171,19 @@ async def play_command(client: Client, message: Message):
                     Config.PLAYING_EMOJI_ID: "🎵"
                 }
                 fallback_msg = Strings.get_message_with_fallback(message_text, fallback_emoji_map)
-                photo = details.get("thumbnail") if details.get("thumbnail") and os.path.exists(details.get("thumbnail")) else Images.get_play_image()
                 await message.reply_photo(
-                    photo=photo, 
+                    photo=Images.get_play_image(), 
                     caption=fallback_msg,
                     reply_markup=Buttons.get_playback_buttons(bot_username)
                 )
+            
+            # Update thumbnail in background after playback starts
+            if thumbnail_task:
+                asyncio.create_task(_update_playing_thumbnail(message, thumbnail_task, bot_username, message_text))
+                
         except Exception as e:
             # Send custom error message to group
             try:
-                await m.delete()
                 await message.reply_text(Strings.PLAY_ERROR_MSG)
             except Exception:
                 await message.reply_text(Strings.PLAY_ERROR_MSG)
@@ -195,3 +196,30 @@ async def play_command(client: Client, message: Message):
                     await bot.send_message(Config.LOG_ID, log_message)
                 except Exception as log_error:
                     print(f"Failed to send error to log group: {log_error}")
+
+async def _update_playing_thumbnail(message, thumbnail_task, bot_username, message_text):
+    """Background task to update message with song thumbnail after it's downloaded"""
+    try:
+        thumb_path = await thumbnail_task
+        if thumb_path and os.path.exists(thumb_path):
+            # Edit the message to show the actual thumbnail
+            try:
+                await message.reply_photo(
+                    photo=thumb_path,
+                    caption=message_text,
+                    reply_markup=Buttons.get_playback_buttons(bot_username)
+                )
+            except Exception:
+                pass  # Ignore errors in background update
+    except Exception as e:
+        print(f"Failed to update thumbnail: {e}")
+
+async def _update_queue_thumbnail(chat_id, pos, thumbnail_task):
+    """Background task to update queue item with thumbnail"""
+    try:
+        thumb_path = await thumbnail_task
+        if thumb_path:
+            # Update the queue item with the thumbnail
+            queue_manager.update_queue_thumbnail(chat_id, pos, thumb_path)
+    except Exception as e:
+        print(f"Failed to update queue thumbnail: {e}")
