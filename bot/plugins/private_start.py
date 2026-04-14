@@ -4,59 +4,65 @@ from bot.strings import Strings
 from config import Config
 from bot.images import Images
 from bot.buttons import Buttons
+import traceback
 
 @Client.on_message(filters.command("start") & filters.private)
 async def private_start(client: Client, message: Message):
+    """Handle /start command in private DM"""
     try:
-        print(f"Private start received from: {message.from_user.first_name} ({message.from_user.id})")
+        user_id = message.from_user.id
+        user_name = message.from_user.first_name or "User"
+        
+        print(f"✅ Private /start received from: {user_name} ({user_id})")
         
         # Get Bot info
         bot_me = await client.get_me()
         bot_username = bot_me.username
-        bot_name = f"[{bot_me.first_name}](tg://user?id={bot_me.id})"
+        bot_name = bot_me.first_name
         
-        # Get User info
-        user_name = message.from_user.first_name if message.from_user else "User"
-        user_id = message.from_user.id if message.from_user else message.chat.id
-        user_mention = f"[{user_name}](tg://user?id={user_id})"
+        # Simple owner mention (avoid get_users which can fail)
+        owner_mention = f"tg://user?id={Config.OWNER_ID}"
         
-        # Get Owner info
-        owner_id = Config.OWNER_ID
-        owner_mention = "[Unknown](https://t.me/telegram)"
-        if owner_id:
-            try:
-                owner_user = await client.get_users(owner_id)
-                owner_mention = f"[{owner_user.first_name}](tg://user?id={owner_id})"
-            except:
-                owner_mention = f"[Owner](tg://user?id={owner_id})"
-
         # Format message
         start_text = Strings.PRIVATE_START_MSG.format(
-            user=user_mention, 
-            bot_name=bot_name,
-            owner=owner_mention
+            user=f"[{user_name}](tg://user?id={user_id})", 
+            bot_name=f"[{bot_name}](tg://user?id={bot_me.id})",
+            owner=f"[Owner]({owner_mention})"
         )
         
-        # Buttons
-        reply_markup = Buttons.get_private_start_buttons(bot_username)
-        
-        # Send Photo with Fallback
+        # Get buttons
         try:
+            reply_markup = Buttons.get_private_start_buttons(bot_username)
+        except Exception as e:
+            print(f"⚠️ Error generating buttons: {e}")
+            reply_markup = None
+        
+        # Try sending photo first, fallback to text
+        try:
+            photo = Images.get_start_image()
             await message.reply_photo(
-                photo=Images.get_start_image(),
+                photo=photo,
                 caption=start_text,
                 reply_markup=reply_markup
             )
-            print(f"Start message sent successfully to {user_name}")
+            print(f"✅ Start message (photo) sent to {user_name}")
         except Exception as e:
-            print(f"Error sending photo to {user_name}: {e}")
-            await message.reply_text(start_text, reply_markup=reply_markup)
+            print(f"⚠️ Photo send failed, using text: {e}")
+            try:
+                await message.reply_text(
+                    start_text,
+                    reply_markup=reply_markup,
+                    disable_web_page_preview=True
+                )
+                print(f"✅ Start message (text) sent to {user_name}")
+            except Exception as e2:
+                print(f"❌ Text send also failed: {e2}")
+                await message.reply_text("👋 Welcome! Use /help to see commands.")
             
     except Exception as e:
-        print(f"Critical error in private start plugin: {e}")
-        import traceback
+        print(f"❌ Critical error in private_start: {e}")
         traceback.print_exc()
         try:
-            await message.reply_text("❌ Error occurred. Please try again.")
+            await message.reply_text("👋 Welcome! Something went wrong. Try /help")
         except:
             pass
