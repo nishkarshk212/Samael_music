@@ -201,10 +201,12 @@ class Strings:
         title_mention = f"[{short_title}]({url})" if url else short_title
         header = "❖  𝛅ᴛᴧʀᴛєᴅ  " + ("ᴠɪᴅєᴏ" if is_video else "ᴧᴜᴅɪᴏ") + "  𝛅ᴛʀєᴧϻɪηɢ"
         return (
-            f"▎ {header}\n"
-            f"▎ ❍ ᴛɪᴛʟє : {title_mention}\n"
-            f"▎ ❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
-            f"▎ ❍ ʙʏ : {artist}"
+            f"<blockquote>"
+            f"{header}\n"
+            f"❍ ᴛɪᴛʟє : {title_mention}\n"
+            f"❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
+            f"❍ ʙʏ : {artist}"
+            f"</blockquote>"
         )
         
     @classmethod
@@ -233,7 +235,7 @@ class Strings:
     def get_queue_now_playing(cls, title):
         from config import Config
         playing_emoji = cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:"))
-        return f"▎ {playing_emoji} `{title}`\n"
+        return f"<blockquote>{playing_emoji} `{title}`</blockquote>\n"
 
     QUEUE_ITEM = "{pos}. `{title}` (" + Font.math("Added by {user}") + ")\n"
     
@@ -244,8 +246,10 @@ class Strings:
         skip_emoji = cls._format_emoji_message(Config.SKIP_EMOJI_ID, "⏭", Font.small_caps("Skipped!"))
         playing_emoji = cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:"))
         return (
-            f"▎ {skip_emoji}\n\n"
-            f"▎ {playing_emoji} `{title}`"
+            f"<blockquote>"
+            f"{skip_emoji}\n\n"
+            f"{playing_emoji} `{title}`"
+            f"</blockquote>"
         )
 
     SKIP_EMPTY_MSG = "❌ " + Font.small_caps("The queue is empty.")

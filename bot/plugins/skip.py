@@ -34,7 +34,7 @@ async def skip_command(client: Client, message: Message):
             await pytgcalls.play(chat_id, MediaStream(next_track["path"], audio_parameters=AudioQuality.MEDIUM))
             skipped_text = Strings.get_skipped_msg(next_track['title'])
             try:
-                await message.reply_photo(photo=Images.get_play_image(), caption=skipped_text)
+                await message.reply_photo(photo=Images.get_play_image(), caption=skipped_text, parse_mode="html")
                 print(f"✅ Skip message sent for: {next_track['title']}")
             except Exception as e:
                 print(f"⚠️ Photo send failed in skip: {e}")
