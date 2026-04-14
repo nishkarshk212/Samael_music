@@ -56,7 +56,7 @@ async def play_command(client: Client, message: Message):
                     message_text = Strings.get_added_queue_msg(title=title, pos=pos, user=user_name)
                     try:
                         await m.delete()
-                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text, parse_mode="html")
+                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text)
                     except Exception:
                         fallback_emoji_map = {Config.SUCCESS_EMOJI_ID: "📝"}
                         return await m.edit(Strings.get_message_with_fallback(message_text, fallback_emoji_map))
@@ -73,7 +73,7 @@ async def play_command(client: Client, message: Message):
                     message_text = Strings.get_streaming_started_msg(title=title, duration=duration, artist=user_name, is_video=is_video)
                     try:
                         await m.delete()
-                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text, parse_mode="html")
+                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text)
                     except Exception:
                         fallback_emoji_map = {
                             Config.PLAYING_EMOJI_ID: "🎵"
@@ -138,7 +138,6 @@ async def play_command(client: Client, message: Message):
         await message.reply_photo(
             photo=Images.get_play_image(),
             caption=message_text,
-            parse_mode="html",
             reply_markup=Buttons.get_close_button()
         )
         
@@ -176,7 +175,6 @@ async def play_command(client: Client, message: Message):
                 await message.reply_photo(
                     photo=photo_to_use, 
                     caption=message_text,
-                    parse_mode="html",
                     reply_markup=Buttons.get_playing_buttons(bot_username)
                 )
             except Exception:
@@ -187,7 +185,6 @@ async def play_command(client: Client, message: Message):
                 await message.reply_photo(
                     photo=photo_to_use, 
                     caption=fallback_msg,
-                    parse_mode="html",
                     reply_markup=Buttons.get_playing_buttons(bot_username)
                 )
                 

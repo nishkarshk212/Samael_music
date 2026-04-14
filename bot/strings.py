@@ -201,12 +201,10 @@ class Strings:
         title_mention = f"[{short_title}]({url})" if url else short_title
         header = "❖  𝛅ᴛᴧʀᴛєᴅ  " + ("ᴠɪᴅєᴏ" if is_video else "ᴧᴜᴅɪᴏ") + "  𝛅ᴛʀєᴧϻɪηɢ"
         return (
-            f"<blockquote>{header}</blockquote>\n"
-            f"<blockquote>"
-            f" ❍ ᴛɪᴛʟє : {title_mention}\n"
-            f" ❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
-            f" ❍ ʙʏ : {artist}"
-            f"</blockquote>"
+            f"▎ {header}\n"
+            f"▎ ❍ ᴛɪᴛʟє : {title_mention}\n"
+            f"▎ ❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
+            f"▎ ❍ ʙʏ : {artist}"
         )
         
     @classmethod
@@ -217,12 +215,10 @@ class Strings:
         title_mention = f"[{short_title}]({url})" if url else short_title
         header = f"❖ ᴧᴅᴅєᴅ ᴛᴏ ǫᴜєᴜє ᴧᴛ #{pos}"
         return (
-            f"<blockquote>{header}</blockquote>\n"
-            f"<blockquote>"
-            f" ❍ ᴛɪᴛʟє : {title_mention}\n"
-            f" ❍ ᴅᴜʀᴧᴛɪση : {duration}\n"
-            f" ❍ ʙʏ : {user}"
-            f"</blockquote>"
+            f"▎ {header}\n"
+            f"▎ ❍ ᴛɪᴛʟє : {title_mention}\n"
+            f"▎ ❍ ᴅᴜʀᴧᴛɪση : {duration}\n"
+            f"▎ ❍ ʙʏ : {user}"
         )
     
     # Queue Messages
@@ -237,7 +233,7 @@ class Strings:
     def get_queue_now_playing(cls, title):
         from config import Config
         playing_emoji = cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:"))
-        return f"<blockquote>{playing_emoji} `{title}`</blockquote>\n"
+        return f"▎ {playing_emoji} `{title}`\n"
 
     QUEUE_ITEM = "{pos}. `{title}` (" + Font.math("Added by {user}") + ")\n"
     
@@ -248,8 +244,8 @@ class Strings:
         skip_emoji = cls._format_emoji_message(Config.SKIP_EMOJI_ID, "⏭", Font.small_caps("Skipped!"))
         playing_emoji = cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:"))
         return (
-            f"<blockquote>{skip_emoji}</blockquote>\n\n"
-            f"<blockquote>{playing_emoji} `{title}`</blockquote>"
+            f"▎ {skip_emoji}\n\n"
+            f"▎ {playing_emoji} `{title}`"
         )
 
     SKIP_EMPTY_MSG = "❌ " + Font.small_caps("The queue is empty.")

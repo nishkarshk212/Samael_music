@@ -52,7 +52,7 @@ async def localplay_command(client: Client, message: Message):
                 artist="Local Media"
             )
             message_text = Strings.get_added_queue_msg(title=file_name, pos=pos, user=message.from_user.first_name)
-            return await message.reply_photo(photo=Images.get_play_image(), caption=message_text, parse_mode="html")
+            return await message.reply_photo(photo=Images.get_play_image(), caption=message_text)
         else:
             # Play directly
             if is_video:
@@ -75,7 +75,6 @@ async def localplay_command(client: Client, message: Message):
             return await message.reply_photo(
                 photo=Images.get_play_image(),
                 caption=message_text,
-                parse_mode="html",
                 reply_markup=Buttons.get_playback_buttons(bot_me.username)
             )
             

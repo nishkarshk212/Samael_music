@@ -34,7 +34,7 @@ async def skip_command(client: Client, message: Message):
             await pytgcalls.play(chat_id, MediaStream(next_track["path"], audio_parameters=AudioQuality.MEDIUM))
             skipped_text = Strings.get_skipped_msg(next_track['title'])
             try:
-                await message.reply_photo(photo=Images.get_play_image(), caption=skipped_text, parse_mode="html")
+                await message.reply_photo(photo=Images.get_play_image(), caption=skipped_text)
             except Exception:
                 fallback_emoji_map = {Config.SKIP_EMOJI_ID: "⏭", Config.PLAYING_EMOJI_ID: "🎵"}
                 await message.reply_text(Strings.get_message_with_fallback(skipped_text, fallback_emoji_map))
