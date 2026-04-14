@@ -8,12 +8,14 @@ import traceback
 
 print("✅✅✅ private_start.py module is LOADED ✅✅✅")
 
-@Client.on_message(filters.command("start") & filters.private)
+@Client.on_message(filters.command("start") & filters.private, group=0)
 async def private_start(client: Client, message: Message):
     """Handle /start command in private DM"""
     print(f"🔥🔥🔥 PRIVATE /start HANDLER TRIGGERED! 🔥🔥🔥")
     print(f"User: {message.from_user.first_name} ({message.from_user.id})")
     print(f"Chat type: {message.chat.type}")
+    print(f"Message text: '{message.text}'")
+    print(f"Command: {message.command}")
     try:
         user_id = message.from_user.id
         user_name = message.from_user.first_name or "User"

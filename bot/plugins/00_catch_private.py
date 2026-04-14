@@ -1,5 +1,6 @@
 from pyrogram import filters, Client
 from pyrogram.types import Message
+from pyrogram.enums import ContinuePropagation
 
 # This handler catches ALL private messages to debug
 @Client.on_message(filters.private, group=-10)
@@ -11,3 +12,5 @@ async def catch_all_private(client: Client, message: Message):
     if message.text:
         print(f"Text: {message.text}")
     print(f"🚨🚨🚨")
+    # Continue to next handler
+    raise ContinuePropagation()
