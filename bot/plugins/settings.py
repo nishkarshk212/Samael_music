@@ -34,9 +34,12 @@ async def settings_command(client: Client, message: Message):
             chat_member = await client.get_chat_member(chat_id, user_id)
             print(f"User status: {chat_member.status}")
             
-            if chat_member.status not in ["creator", "administrator"]:
-                print(f"User {user_id} is not admin (status: {chat_member.status})")
+            # Fix: Check enum values properly
+            if chat_member.status.value not in ["creator", "administrator"]:
+                print(f"User {user_id} is not admin (status: {chat_member.status.value})")
                 return await message.reply_text("❌ ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴀᴄᴄᴇss sᴇᴛᴛɪɴɢs.")
+            else:
+                print(f"User {user_id} is admin/creator - allowing access")
         except Exception as e:
             print(f"Error checking admin status: {e}")
             # If we can't check, allow the command (fallback)
