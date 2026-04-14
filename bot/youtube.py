@@ -1,36 +1,14 @@
-import yt_dlp
-import re
-import math
+import aiohttp
 import asyncio
+import re
 from functools import lru_cache
+from config import Config
 
 # Cache for search results (cache up to 200 searches)
 @lru_cache(maxsize=200)
 def _cached_search(query):
-    """Synchronous cached search for faster repeated queries"""
-    ydl_opts = {
-        'quiet': True,
-        'skip_download': True,
-        'default_search': 'ytsearch1',
-        'no_warnings': True,
-        'extract_flat': False,
-    }
-    
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(query, download=False)
-    
-    if 'entries' in info:
-        video = info['entries'][0]
-    else:
-        video = info
-    
-    return {
-        'title': video.get('title', 'Unknown'),
-        'duration': video.get('duration', 0),
-        'url': video.get('webpage_url'),
-        'video_id': video.get('id'),
-        'artist': video.get('uploader', 'Unknown Artist')
-    }
+    """Return cached query - actual search is async now"""
+    return None
 
 def _format_duration(seconds):
     if seconds is None or not isinstance(seconds, (int, float)):
@@ -43,76 +21,86 @@ def _format_duration(seconds):
 
 async def search_song(query):
     """
-    Search for a song and get its details using yt-dlp with caching.
+    Search for a song using NexGenBots API.
+    Fast, no bot detection, no cookies needed.
     """
-    loop = asyncio.get_event_loop()
-    # Use cached search for faster response
-    result = await loop.run_in_executor(None, lambda: _cached_search(query))
-    
-    duration = _format_duration(result['duration'])
-    
-    return result['title'], duration, result['url'], result['video_id'], result['artist']
+    try:
+        api_url = f"{Config.NEXGENBOTS_API}/api/search"
+        params = {
+            "query": query,
+            "api_key": Config.API_KEY
+        }
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, params=params, timeout=10) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    if data.get("status") == "success" and data.get("results"):
+                        result = data["results"][0]
+                        return (
+                            result.get("title", "Unknown"),
+                            result.get("duration", "N/A"),
+                            result.get("url", ""),
+                            result.get("id", ""),
+                            result.get("artist", "Unknown Artist")
+                        )
+        
+        # Fallback: return empty if API fails
+        return "Unknown", "N/A", "", "", "Unknown Artist"
+    except Exception as e:
+        print(f"Search error: {e}")
+        return "Unknown", "N/A", "", "", "Unknown Artist"
 
 async def get_youtube_details(query):
     """
-    Optimized: Search for YouTube video and get stream URL in parallel.
-    Uses single yt-dlp call with optimized format extraction.
+    Get YouTube video details and stream URL using NexGenBots API.
+    No cookies needed, fast response, no bot detection.
     """
     try:
-        # Optimized yt-dlp options - get both info and stream in one call
-        ydl_opts = {
-            'format': 'bestaudio/best',
-            'quiet': True,
-            'no_warnings': True,
-            'default_search': 'ytsearch1',
-            'socket_timeout': 10,
-            'retries': 2,
-            'fragment_retries': 2,
-            'extractor_retries': 2,
+        # Use NexGenBots API to get stream URL
+        api_url = f"{Config.NEXGENBOTS_API}/api/play"
+        params = {
+            "query": query,
+            "api_key": Config.API_KEY
         }
         
-        loop = asyncio.get_event_loop()
-        def extract():
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                return ydl.extract_info(query, download=False)
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url, params=params, timeout=15) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    
+                    if data.get("status") == "success":
+                        title = data.get("title", "Unknown")
+                        stream_url = data.get("url") or data.get("stream_url")
+                        duration_sec = data.get("duration", 0)
+                        duration = _format_duration(duration_sec)
+                        video_id = data.get("id", "")
+                        artist = data.get("artist", "Unknown Artist")
+                        url = data.get("webpage_url") or f"https://youtube.com/watch?v={video_id}"
+                        
+                        if not stream_url:
+                            return None, "Could not get stream URL from API."
+                        
+                        # Run thumbnail download in parallel (don't wait for it)
+                        from bot.thumbnail import get_thumbnail
+                        thumbnail_task = asyncio.create_task(get_thumbnail(video_id, title))
+                        
+                        # Return immediately with stream_url
+                        return {
+                            "title": title, 
+                            "path": stream_url, 
+                            "duration": duration, 
+                            "artist": artist, 
+                            "thumbnail": None,  # Will be set later
+                            "video_id": video_id,
+                            "url": url,
+                            "_thumbnail_task": thumbnail_task  # Background task
+                        }, None
         
-        info = await loop.run_in_executor(None, extract)
-        
-        # Handle search results
-        if 'entries' in info:
-            video = info['entries'][0]
-        else:
-            video = info
-        
-        title = video.get('title', 'Unknown')
-        duration_sec = video.get('duration', 0)
-        duration = _format_duration(duration_sec)
-        url = video.get('webpage_url')
-        video_id = video.get('id')
-        artist = video.get('uploader', 'Unknown Artist')
-        stream_url = video.get('url')
-        
-        if not stream_url:
-            return None, "Could not extract stream URL."
-        
-        # Run thumbnail download in parallel (don't wait for it)
-        from bot.thumbnail import get_thumbnail
-        thumbnail_task = asyncio.create_task(get_thumbnail(video_id, title))
-        
-        # Return immediately with stream_url
-        return {
-            "title": title, 
-            "path": stream_url, 
-            "duration": duration, 
-            "artist": artist, 
-            "thumbnail": None,  # Will be set later
-            "video_id": video_id,
-            "url": url,
-            "_thumbnail_task": thumbnail_task  # Background task
-        }, None
+        return None, "API request failed. Please try again."
         
     except Exception as e:
-        return None, str(e)
+        return None, f"Error: {str(e)}"
 
 async def play_youtube(chat_id, query):
     # This is now kept for backward compatibility if needed, but we'll use get_youtube_details in play.py
