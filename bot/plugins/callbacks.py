@@ -25,14 +25,16 @@ async def pause_callback(client: Client, query: CallbackQuery):
 @Client.on_callback_query(filters.regex("help_command"))
 async def help_menu_callback(client: Client, query: CallbackQuery):
     try:
-        # Support mention
-        support_chat_id = str(Config.SUPPORT_CHANNEL)
-        if support_chat_id.startswith("-100"):
-            support_mention = f"[Support Chat](https://t.me/c/{support_chat_id[4:]}/1)"
-        else:
-            support_mention = f"[Support Chat](https://t.me/{support_chat_id})"
-            
-        help_text = Strings.HELP_MSG.format(support_mention=support_mention)
+        # Support mention (handle empty)
+        support_mention = ""
+        if Config.SUPPORT_CHANNEL:
+            support_chat_id = str(Config.SUPPORT_CHANNEL)
+            if support_chat_id.startswith("-100"):
+                support_mention = f"[Support Chat](https://t.me/c/{support_chat_id[4:]}/1)"
+            else:
+                support_mention = f"[Support Chat](https://t.me/{support_chat_id})"
+        
+        help_text = Strings.HELP_MSG.format(support_mention=support_mention if support_mention else "our support team")
         
         await query.message.edit_media(
             media=InputMediaPhoto(media=Images.get_help_image(), caption=help_text),

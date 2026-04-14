@@ -11,8 +11,8 @@ class Config:
     LOG_ID = int(os.getenv("LOG_ID", "0"))
     OWNER_ID = int(os.getenv("OWNER_ID", "8791884726"))
     OWNER_USERNAME = os.getenv("OWNER_USERNAME", "Jayden_212")
-    SUPPORT_CHANNEL = os.getenv("SUPPORT_CHANNEL", "-1003822351431")
-    UPDATES_CHANNEL = os.getenv("UPDATES_CHANNEL", "-1003713225825")
+    SUPPORT_CHANNEL = os.getenv("SUPPORT_CHANNEL", "")  # Empty by default to avoid errors
+    UPDATES_CHANNEL = os.getenv("UPDATES_CHANNEL", "")  # Empty by default to avoid errors
     API_KEY = os.getenv("API_KEY", "")
     NEXGENBOTS_API = os.getenv("NEXGENBOTS_API", "https://pvtz.nexgenbots.xyz")
     VIDEO_API_URL = os.getenv("VIDEO_API_URL", "https://pvtz.nexgenbots.xyz")

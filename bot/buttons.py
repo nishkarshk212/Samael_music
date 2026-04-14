@@ -12,6 +12,8 @@ class Buttons:
         
         # Format channel links (handle both IDs and usernames)
         def format_link(chat_id):
+            if not chat_id:
+                return None
             chat_id = str(chat_id)
             if chat_id.startswith("-100"):
                 return f"https://t.me/c/{chat_id[4:]}/1"
@@ -21,32 +23,36 @@ class Buttons:
         support_link = format_link(Config.SUPPORT_CHANNEL)
         updates_link = format_link(Config.UPDATES_CHANNEL)
 
-        keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text="✨ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✨",
-                        url=invite_link
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="ꜱᴜᴘᴘᴏʀᴛ",
-                        url=support_link
-                    ),
-                    InlineKeyboardButton(
-                        text="ᴜᴘᴅᴀᴛᴇꜱ",
-                        url=updates_link
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="ʜᴇʟᴘ ᴀɴᴅ ᴄᴏᴍᴍᴀɴᴅ",
-                        callback_data="help_command"
-                    )
-                ]
-            ]
-        )
+        # Build keyboard rows dynamically
+        rows = []
+        
+        # Add me button
+        rows.append([
+            InlineKeyboardButton(
+                text="✨ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✨",
+                url=invite_link
+            )
+        ])
+        
+        # Support/Updates row (only if configured)
+        if support_link or updates_link:
+            row = []
+            if support_link:
+                row.append(InlineKeyboardButton(text="ꜱᴜᴘᴘᴏʀᴛ", url=support_link))
+            if updates_link:
+                row.append(InlineKeyboardButton(text="ᴜᴘᴅᴀᴛᴇꜱ", url=updates_link))
+            if row:
+                rows.append(row)
+        
+        # Help button
+        rows.append([
+            InlineKeyboardButton(
+                text="ʜᴇʟᴘ ᴀɴᴅ ᴄᴏᴍᴍᴀɴᴅ",
+                callback_data="help_command"
+            )
+        ])
+        
+        keyboard = InlineKeyboardMarkup(rows)
         return keyboard
 
     @staticmethod
@@ -184,26 +190,32 @@ class Buttons:
         invite_link = f"https://t.me/{bot_username}?startgroup=true"
         
         # Support link
-        support_chat_id = str(Config.SUPPORT_CHANNEL)
-        if support_chat_id.startswith("-100"):
-            support_link = f"https://t.me/c/{support_chat_id[4:]}/1"
-        else:
-            support_link = f"https://t.me/{support_chat_id}"
+        support_chat_id = str(Config.SUPPORT_CHANNEL) if Config.SUPPORT_CHANNEL else None
+        support_link = None
+        if support_chat_id:
+            if support_chat_id.startswith("-100"):
+                support_link = f"https://t.me/c/{support_chat_id[4:]}/1"
+            else:
+                support_link = f"https://t.me/{support_chat_id}"
 
-        keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text="✨ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✨",
-                        url=invite_link
-                    ),
-                    InlineKeyboardButton(
-                        text="ꜱᴜᴘᴘᴏʀᴛ",
-                        url=support_link
-                    )
-                ]
-            ]
-        )
+        # Build rows dynamically
+        rows = []
+        row = [
+            InlineKeyboardButton(
+                text="✨ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✨",
+                url=invite_link
+            )
+        ]
+        if support_link:
+            row.append(
+                InlineKeyboardButton(
+                    text="ꜱᴜᴘᴘᴏʀᴛ",
+                    url=support_link
+                )
+            )
+        rows.append(row)
+        
+        keyboard = InlineKeyboardMarkup(rows)
         return keyboard
 
     @staticmethod
@@ -215,49 +227,48 @@ class Buttons:
         invite_link = f"https://t.me/{bot_username}?startgroup=true"
         
         # Support link
-        support_chat_id = str(Config.SUPPORT_CHANNEL)
-        if support_chat_id.startswith("-100"):
-            support_link = f"https://t.me/c/{support_chat_id[4:]}/1"
-        else:
-            support_link = f"https://t.me/{support_chat_id}"
+        support_chat_id = str(Config.SUPPORT_CHANNEL) if Config.SUPPORT_CHANNEL else None
+        support_link = None
+        if support_chat_id:
+            if support_chat_id.startswith("-100"):
+                support_link = f"https://t.me/c/{support_chat_id[4:]}/1"
+            else:
+                support_link = f"https://t.me/{support_chat_id}"
 
         # Owner link
         owner_link = f"https://t.me/{Config.OWNER_USERNAME}"
 
-        keyboard = InlineKeyboardMarkup(
+        # Build rows
+        rows = [
             [
-                [
-                    InlineKeyboardButton(text="⏸", callback_data="pause"),
-                    InlineKeyboardButton(text="▶️", callback_data="resume"),
-                    InlineKeyboardButton(text="⏭", callback_data="skip_callback"),
-                    InlineKeyboardButton(text="⏹", callback_data="stop_playback")
-                ],
-                [
-                    InlineKeyboardButton(text="⏪ 10s", callback_data="seek_back"),
-                    InlineKeyboardButton(text="⏩ 10s", callback_data="seek_forward")
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="✨ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✨",
-                        url=invite_link
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="ꜱᴜᴘᴘᴏʀᴛ",
-                        url=support_link
-                    ),
-                    InlineKeyboardButton(
-                        text="ᴏᴡɴᴇʀ",
-                        url=owner_link
-                    )
-                ],
-                [
-                    InlineKeyboardButton(
-                        text="ᴄʟᴏꜱᴇ",
-                        callback_data="close_message"
-                    )
-                ]
+                InlineKeyboardButton(text="⏸", callback_data="pause"),
+                InlineKeyboardButton(text="▶️", callback_data="resume"),
+                InlineKeyboardButton(text="⏭", callback_data="skip_callback"),
+                InlineKeyboardButton(text="⏹", callback_data="stop_playback")
+            ],
+            [
+                InlineKeyboardButton(text="⏪ 10s", callback_data="seek_back"),
+                InlineKeyboardButton(text="⏩ 10s", callback_data="seek_forward")
+            ],
+            [
+                InlineKeyboardButton(
+                    text="✨ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✨",
+                    url=invite_link
+                )
             ]
-        )
+        ]
+        
+        # Add support/owner row if configured
+        if support_link:
+            rows.append([
+                InlineKeyboardButton(text="ꜱᴜᴘᴘᴏʀᴛ", url=support_link),
+                InlineKeyboardButton(text="ᴏᴡɴᴇʀ", url=owner_link)
+            ])
+        
+        # Close button
+        rows.append([
+            InlineKeyboardButton(text="ᴄʟᴏꜱᴇ", callback_data="close_message")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(rows)
         return keyboard
