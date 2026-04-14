@@ -219,6 +219,53 @@ class Buttons:
         return keyboard
 
     @staticmethod
+    def get_playing_buttons(bot_username: str):
+        """
+        Returns the inline keyboard for playing messages with only:
+        Add me baby, Support, Owner, Close buttons
+        """
+        # Bot invite link
+        invite_link = f"https://t.me/{bot_username}?startgroup=true"
+        
+        # Support link
+        support_chat_id = str(Config.SUPPORT_CHANNEL) if Config.SUPPORT_CHANNEL else None
+        support_link = None
+        if support_chat_id:
+            if support_chat_id.startswith("-100"):
+                support_link = f"https://t.me/c/{support_chat_id[4:]}/1"
+            else:
+                support_link = f"https://t.me/{support_chat_id}"
+
+        # Owner link
+        owner_link = f"https://t.me/{Config.OWNER_USERNAME}"
+
+        # Build rows
+        rows = []
+        
+        # Add me baby button
+        rows.append([
+            InlineKeyboardButton(
+                text="✨ ᴀᴅᴅ ᴍᴇ ʙᴀʙʏ ✨",
+                url=invite_link
+            )
+        ])
+        
+        # Support and Owner row
+        if support_link:
+            rows.append([
+                InlineKeyboardButton(text="ꜱᴜᴘᴘᴏʀᴛ", url=support_link),
+                InlineKeyboardButton(text="ᴏᴡɴᴇʀ", url=owner_link)
+            ])
+        
+        # Close button
+        rows.append([
+            InlineKeyboardButton(text="ᴄʟᴏꜱᴇ", callback_data="close_message")
+        ])
+        
+        keyboard = InlineKeyboardMarkup(rows)
+        return keyboard
+
+    @staticmethod
     def get_playback_buttons(bot_username: str):
         """
         Returns the inline keyboard for playback messages.

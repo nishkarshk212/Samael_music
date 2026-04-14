@@ -56,7 +56,7 @@ async def play_command(client: Client, message: Message):
                     message_text = Strings.get_added_queue_msg(title=title, pos=pos, user=user_name)
                     try:
                         await m.delete()
-                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text)
+                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text, parse_mode="html")
                     except Exception:
                         fallback_emoji_map = {Config.SUCCESS_EMOJI_ID: "📝"}
                         return await m.edit(Strings.get_message_with_fallback(message_text, fallback_emoji_map))
@@ -73,7 +73,7 @@ async def play_command(client: Client, message: Message):
                     message_text = Strings.get_streaming_started_msg(title=title, duration=duration, artist=user_name, is_video=is_video)
                     try:
                         await m.delete()
-                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text)
+                        return await message.reply_photo(photo=Images.get_play_image(), caption=message_text, parse_mode="html")
                     except Exception:
                         fallback_emoji_map = {
                             Config.PLAYING_EMOJI_ID: "🎵"
@@ -138,6 +138,7 @@ async def play_command(client: Client, message: Message):
         await message.reply_photo(
             photo=Images.get_play_image(),
             caption=message_text,
+            parse_mode="html",
             reply_markup=Buttons.get_close_button()
         )
         
@@ -159,12 +160,24 @@ async def play_command(client: Client, message: Message):
             bot_me = await client.get_me()
             bot_username = bot_me.username
             
-            # Send response immediately with default image
+            # Wait for thumbnail if available, then send ONE message with thumbnail
+            thumb_path = None
+            if thumbnail_task:
+                try:
+                    thumb_path = await asyncio.wait_for(thumbnail_task, timeout=10)
+                except:
+                    pass
+            
+            # Use thumbnail if available, otherwise use default image
+            photo_to_use = thumb_path if thumb_path and os.path.exists(thumb_path) else Images.get_play_image()
+            
+            # Send single message with thumbnail and correct buttons
             try:
                 await message.reply_photo(
-                    photo=Images.get_play_image(), 
+                    photo=photo_to_use, 
                     caption=message_text,
-                    reply_markup=Buttons.get_playback_buttons(bot_username)
+                    parse_mode="html",
+                    reply_markup=Buttons.get_playing_buttons(bot_username)
                 )
             except Exception:
                 fallback_emoji_map = {
@@ -172,14 +185,11 @@ async def play_command(client: Client, message: Message):
                 }
                 fallback_msg = Strings.get_message_with_fallback(message_text, fallback_emoji_map)
                 await message.reply_photo(
-                    photo=Images.get_play_image(), 
+                    photo=photo_to_use, 
                     caption=fallback_msg,
-                    reply_markup=Buttons.get_playback_buttons(bot_username)
+                    parse_mode="html",
+                    reply_markup=Buttons.get_playing_buttons(bot_username)
                 )
-            
-            # Update thumbnail in background after playback starts
-            if thumbnail_task:
-                asyncio.create_task(_update_playing_thumbnail(message, thumbnail_task, bot_username, message_text))
                 
         except Exception as e:
             # Send custom error message to group
@@ -196,23 +206,6 @@ async def play_command(client: Client, message: Message):
                     await bot.send_message(Config.LOG_ID, log_message)
                 except Exception as log_error:
                     print(f"Failed to send error to log group: {log_error}")
-
-async def _update_playing_thumbnail(message, thumbnail_task, bot_username, message_text):
-    """Background task to update message with song thumbnail after it's downloaded"""
-    try:
-        thumb_path = await thumbnail_task
-        if thumb_path and os.path.exists(thumb_path):
-            # Edit the message to show the actual thumbnail
-            try:
-                await message.reply_photo(
-                    photo=thumb_path,
-                    caption=message_text,
-                    reply_markup=Buttons.get_playback_buttons(bot_username)
-                )
-            except Exception:
-                pass  # Ignore errors in background update
-    except Exception as e:
-        print(f"Failed to update thumbnail: {e}")
 
 async def _update_queue_thumbnail(chat_id, pos, thumbnail_task):
     """Background task to update queue item with thumbnail"""

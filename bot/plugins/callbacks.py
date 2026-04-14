@@ -261,7 +261,7 @@ async def skip_callback(client: Client, query: CallbackQuery):
             photo = next_track.get("thumbnail") if next_track.get("thumbnail") and os.path.exists(next_track.get("thumbnail")) else Images.get_play_image()
             
             await query.message.edit_media(
-                media=InputMediaPhoto(media=photo, caption=message_text),
+                media=InputMediaPhoto(media=photo, caption=message_text, parse_mode="html"),
                 reply_markup=Buttons.get_playback_buttons(bot_me.username)
             )
             await query.answer("Skipped! ⏭")

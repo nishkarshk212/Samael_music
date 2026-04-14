@@ -23,7 +23,7 @@ async def queue_command(client: Client, message: Message):
             text += Strings.QUEUE_ITEM.format(pos=i, title=track['title'], user=track['user'])
             
     try:
-        await message.reply_photo(photo=Images.get_queue_image(), caption=text)
+        await message.reply_photo(photo=Images.get_queue_image(), caption=text, parse_mode="html")
     except Exception:
         fallback_emoji_map = {Config.QUEUE_EMOJI_ID: "📋", Config.PLAYING_EMOJI_ID: "🎵"}
         await message.reply_text(Strings.get_message_with_fallback(text, fallback_emoji_map))

@@ -46,6 +46,7 @@ async def on_update(client, update):
                         chat_id, 
                         photo=photo, 
                         caption=message_text,
+                        parse_mode="html",
                         reply_markup=Buttons.get_playback_buttons(bot_username)
                     )
                 except DocumentInvalid:
@@ -56,6 +57,7 @@ async def on_update(client, update):
                         chat_id, 
                         photo=photo, 
                         caption=fallback_msg,
+                        parse_mode="html",
                         reply_markup=Buttons.get_playback_buttons(bot_username)
                     )
                         

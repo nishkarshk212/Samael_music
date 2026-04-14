@@ -1,14 +1,7 @@
-import aiohttp
 import asyncio
-import re
-from functools import lru_cache
+import aiohttp
+from youtubesearchpython import VideosSearch
 from config import Config
-
-# Cache for search results (cache up to 200 searches)
-@lru_cache(maxsize=200)
-def _cached_search(query):
-    """Return cached query - actual search is async now"""
-    return None
 
 def _format_duration(seconds):
     if seconds is None or not isinstance(seconds, (int, float)):
@@ -19,91 +12,110 @@ def _format_duration(seconds):
     minutes, seconds = divmod(seconds, 60)
     return f"{minutes}:{seconds:02d}"
 
-async def search_song(query):
-    """
-    Search for a song using NexGenBots API.
-    Fast, no bot detection, no cookies needed.
-    """
-    try:
-        api_url = f"{Config.NEXGENBOTS_API}/api/search"
-        params = {
-            "query": query,
-            "api_key": Config.API_KEY
-        }
-        
-        async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, params=params, timeout=10) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    if data.get("status") == "success" and data.get("results"):
-                        result = data["results"][0]
-                        return (
-                            result.get("title", "Unknown"),
-                            result.get("duration", "N/A"),
-                            result.get("url", ""),
-                            result.get("id", ""),
-                            result.get("artist", "Unknown Artist")
-                        )
-        
-        # Fallback: return empty if API fails
-        return "Unknown", "N/A", "", "", "Unknown Artist"
-    except Exception as e:
-        print(f"Search error: {e}")
-        return "Unknown", "N/A", "", "", "Unknown Artist"
+NEXGEN_API_URL = "https://pvtz.nexgenbots.xyz"
+API_KEY = "NxGBNexGenBots53fc88"
 
 async def get_youtube_details(query):
-    """
-    Get YouTube video details and stream URL using NexGenBots API.
-    No cookies needed, fast response, no bot detection.
-    """
+    """Get YouTube video details using NexGenBots API"""
     try:
+        # Check if query is a URL
+        is_url = query.startswith(('http://', 'https://')) or 'youtube.com' in query or 'youtu.be' in query
+        
+        video_id = None
+        title = None
+        duration = None
+        artist = None
+        
+        if not is_url:
+            # Search YouTube
+            print(f"Searching for: {query}")
+            search = VideosSearch(query, limit=1)
+            results = search.result()['result']
+            
+            if not results or len(results) == 0:
+                return None, "No results found."
+            
+            video_data = results[0]
+            video_id = video_data.get('id', '')
+            video_url = f"https://youtube.com/watch?v={video_id}"
+            title = video_data.get('title', 'Unknown')
+            duration = video_data.get('duration', 'N/A')
+            artist = video_data.get('channel', {}).get('name', 'Unknown Artist')
+            
+        else:
+            # Extract video ID from URL
+            video_url = query
+            if 'youtu.be/' in query:
+                video_id = query.split('youtu.be/')[-1].split('?')[0]
+            elif 'v=' in query:
+                video_id = query.split('v=')[-1].split('&')[0]
+            else:
+                return None, "Invalid YouTube URL."
+        
         # Use NexGenBots API to get stream URL
-        api_url = f"{Config.NEXGENBOTS_API}/api/play"
-        params = {
-            "query": query,
-            "api_key": Config.API_KEY
-        }
+        print(f"Getting stream from NexGenBots API for: {video_id}")
         
         async with aiohttp.ClientSession() as session:
-            async with session.get(api_url, params=params, timeout=15) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    
-                    if data.get("status") == "success":
-                        title = data.get("title", "Unknown")
-                        stream_url = data.get("url") or data.get("stream_url")
-                        duration_sec = data.get("duration", 0)
-                        duration = _format_duration(duration_sec)
-                        video_id = data.get("id", "")
-                        artist = data.get("artist", "Unknown Artist")
-                        url = data.get("webpage_url") or f"https://youtube.com/watch?v={video_id}"
-                        
-                        if not stream_url:
-                            return None, "Could not get stream URL from API."
-                        
-                        # Run thumbnail download in parallel (don't wait for it)
-                        from bot.thumbnail import get_thumbnail
-                        thumbnail_task = asyncio.create_task(get_thumbnail(video_id, title))
-                        
-                        # Return immediately with stream_url
-                        return {
-                            "title": title, 
-                            "path": stream_url, 
-                            "duration": duration, 
-                            "artist": artist, 
-                            "thumbnail": None,  # Will be set later
-                            "video_id": video_id,
-                            "url": url,
-                            "_thumbnail_task": thumbnail_task  # Background task
-                        }, None
+            # Step 1: Request the song
+            url = f"{NEXGEN_API_URL}/song/{video_id}"
+            params = {"api": API_KEY}
+            
+            async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=60)) as response:
+                if response.status != 200:
+                    return None, f"API returned status {response.status}"
+                
+                data = await response.json()
+                status = data.get("status")
+                
+                if status == "done":
+                    stream_link = data.get("link")
+                elif status == "downloading":
+                    print("API is processing, waiting...")
+                    await asyncio.sleep(10)
+                    # Retry once
+                    async with session.get(url, params=params, timeout=aiohttp.ClientTimeout(total=60)) as response2:
+                        if response2.status == 200:
+                            data2 = await response2.json()
+                            if data2.get("status") == "done":
+                                stream_link = data2.get("link")
+                            else:
+                                return None, "API processing timeout. Try again."
+                        else:
+                            return None, f"API retry failed with status {response2.status}"
+                else:
+                    return None, f"Unexpected API status: {status}"
         
-        return None, "API request failed. Please try again."
+        if not stream_link:
+            return None, "Could not get stream URL."
+        
+        print(f"Got stream URL: {stream_link}")
+        
+        # Thumbnail download in background
+        if video_id:
+            from bot.thumbnail import get_thumbnail
+            thumbnail_task = asyncio.create_task(get_thumbnail(video_id, title))
+        else:
+            thumbnail_task = None
+        
+        return {
+            "title": title,
+            "path": stream_link,
+            "duration": duration,
+            "artist": artist,
+            "thumbnail": None,
+            "video_id": video_id,
+            "url": video_url,
+            "_thumbnail_task": thumbnail_task
+        }, None
         
     except Exception as e:
+        error_msg = str(e)
+        print(f"Error: {error_msg}")
+        import traceback
+        traceback.print_exc()
         return None, f"Error: {str(e)}"
 
 async def play_youtube(chat_id, query):
-    # This is now kept for backward compatibility if needed, but we'll use get_youtube_details in play.py
     from pytgcalls.types import MediaStream
     from bot.call import pytgcalls
     details, error = await get_youtube_details(query)
