@@ -15,8 +15,8 @@ async def private_start(client: Client, message: Message):
     print(f"User: {message.from_user.first_name} ({message.from_user.id})")
     print(f"Chat type: {message.chat.type}")
     print(f"Message text: '{message.text}'")
-    print(f"Command: {message.command}")
     try:
+        print(f"Command parsed: {message.command}")
         user_id = message.from_user.id
         user_name = message.from_user.first_name or "User"
         
