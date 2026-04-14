@@ -6,9 +6,14 @@ from bot.images import Images
 from bot.buttons import Buttons
 import traceback
 
+print("✅✅✅ private_start.py module is LOADED ✅✅✅")
+
 @Client.on_message(filters.command("start") & filters.private)
 async def private_start(client: Client, message: Message):
     """Handle /start command in private DM"""
+    print(f"🔥🔥🔥 PRIVATE /start HANDLER TRIGGERED! 🔥🔥🔥")
+    print(f"User: {message.from_user.first_name} ({message.from_user.id})")
+    print(f"Chat type: {message.chat.type}")
     try:
         user_id = message.from_user.id
         user_name = message.from_user.first_name or "User"
