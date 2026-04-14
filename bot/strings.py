@@ -236,7 +236,7 @@ class Strings:
     @classmethod
     def get_queue_now_playing(cls, title):
         from config import Config
-        return cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:")) + f" `{title}`\n"
+        return f"<blockquote>{cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:"))} `{title}`</blockquote>\n"
 
     QUEUE_ITEM = "{pos}. `{title}` (" + Font.math("Added by {user}") + ")\n"
     
@@ -244,8 +244,10 @@ class Strings:
     @classmethod
     def get_skipped_msg(cls, title):
         from config import Config
-        return cls._format_emoji_message(Config.SKIP_EMOJI_ID, "⏭", Font.small_caps("Skipped!")) + f"\n\n" + \
-               cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:")) + f" `{title}`"
+        return (
+            f"<blockquote>{cls._format_emoji_message(Config.SKIP_EMOJI_ID, "⏭", Font.small_caps("Skipped!"))}</blockquote>\n\n" + \
+            f"<blockquote>{cls._format_emoji_message(Config.PLAYING_EMOJI_ID, "🎵", Font.small_caps("Now Playing:"))} `{title}`</blockquote>"
+        )
 
     SKIP_EMPTY_MSG = "❌ " + Font.small_caps("The queue is empty.")
     SKIP_NO_MORE_MSG = "⏭ " + Font.small_caps("Skipped!") + " ɴᴏ ᴍᴏʀᴇ ᴛʀᴀᴄᴋs ɪɴ ᴛʜᴇ ǫᴜᴇᴜᴇ."
