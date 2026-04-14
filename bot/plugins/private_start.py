@@ -8,6 +8,8 @@ from bot.buttons import Buttons
 @Client.on_message(filters.command("start") & filters.private)
 async def private_start(client: Client, message: Message):
     try:
+        print(f"Private start received from: {message.from_user.first_name} ({message.from_user.id})")
+        
         # Get Bot info
         bot_me = await client.get_me()
         bot_username = bot_me.username
@@ -45,10 +47,16 @@ async def private_start(client: Client, message: Message):
                 caption=start_text,
                 reply_markup=reply_markup
             )
-        except Exception:
+            print(f"Start message sent successfully to {user_name}")
+        except Exception as e:
+            print(f"Error sending photo to {user_name}: {e}")
             await message.reply_text(start_text, reply_markup=reply_markup)
             
     except Exception as e:
         print(f"Critical error in private start plugin: {e}")
         import traceback
         traceback.print_exc()
+        try:
+            await message.reply_text("❌ Error occurred. Please try again.")
+        except:
+            pass
