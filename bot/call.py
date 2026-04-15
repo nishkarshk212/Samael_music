@@ -65,7 +65,6 @@ async def on_update(client, update):
                 # Send custom error message to group
                 try:
                     from bot.bot import bot
-                    from bot.strings import Strings
                     await bot.send_message(chat_id, Strings.PLAY_ERROR_MSG)
                 except Exception as send_error:
                     print(f"Failed to send error message to {chat_id}: {send_error}")
