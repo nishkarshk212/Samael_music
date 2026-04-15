@@ -200,12 +200,11 @@ class Strings:
         title_mention = f"[{short_title}]({url})" if url else short_title
         header = "❖  𝛅ᴛᴧʀᴛєᴅ  " + ("ᴠɪᴅєᴏ" if is_video else "ᴧᴜᴅɪᴏ") + "  𝛅ᴛʀєᴧϻɪηɢ"
         return (
-            f"<blockquote>"
-            f"{header}\n"
-            f"❍ ᴛɪᴛʟє : {title_mention}\n"
-            f"❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
-            f"❍ ʙʏ : {artist}"
-            f"</blockquote>"
+            f"❖ 𝛅ᴛᴧʀᴛєᴅ  " + ("ᴠɪᴅєᴏ" if is_video else "ᴧᴜᴅɪᴏ") + "  𝛅ᴛʀєᴧϻɪηɢ\n"
+            f"▎\n"
+            f"▎ ❍ ᴛɪᴛʟє : {title_mention}\n"
+            f"▎ ❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
+            f"▎ ❍ ʙʏ : {artist}"
         )
         
     @classmethod
