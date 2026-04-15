@@ -196,17 +196,14 @@ class Strings:
     @classmethod
     def get_streaming_started_msg(cls, title, duration, artist, url=None, is_video=False):
         from config import Config
-        # Shorten title to 25 characters
         short_title = (title[:25] + '...') if len(title) > 25 else title
         title_mention = f"[{short_title}]({url})" if url else short_title
         header = "❖  𝛅ᴛᴧʀᴛєᴅ  " + ("ᴠɪᴅєᴏ" if is_video else "ᴧᴜᴅɪᴏ") + "  𝛅ᴛʀєᴧϻɪηɢ"
         return (
-            f"<blockquote>"
-            f"{header}\n"
-            f"❍ ᴛɪᴛʟє : {title_mention}\n"
-            f"❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
-            f"❍ ʙʏ : {artist}"
-            f"</blockquote>"
+            f"> {header}\n"
+            f"> ❍ ᴛɪᴛʟє : {title_mention}\n"
+            f"> ❍ ᴅᴜʀᴧᴛɪση : {duration} ϻɪηᴜᴛєs\n"
+            f"> ❍ ʙʏ : {artist}"
         )
         
     @classmethod
