@@ -75,7 +75,8 @@ async def localplay_command(client: Client, message: Message):
             return await message.reply_photo(
                 photo=Images.get_play_image(),
                 caption=message_text,
-                reply_markup=Buttons.get_playback_buttons(bot_me.username)
+                reply_markup=Buttons.get_playback_buttons(bot_me.username),
+                parse_mode="html"
             )
             
     except ValueError:

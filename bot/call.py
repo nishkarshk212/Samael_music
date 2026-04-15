@@ -46,7 +46,8 @@ async def on_update(client, update):
                         chat_id, 
                         photo=photo, 
                         caption=message_text,
-                        reply_markup=Buttons.get_playback_buttons(bot_username)
+                        reply_markup=Buttons.get_playback_buttons(bot_username),
+                        parse_mode="html"
                     )
                 except DocumentInvalid:
                     fallback_emoji_map = {Config.PLAYING_EMOJI_ID: "🎵"}
@@ -56,7 +57,8 @@ async def on_update(client, update):
                         chat_id, 
                         photo=photo, 
                         caption=fallback_msg,
-                        reply_markup=Buttons.get_playback_buttons(bot_username)
+                        reply_markup=Buttons.get_playback_buttons(bot_username),
+                        parse_mode="html"
                     )
                         
             except Exception as e:

@@ -262,7 +262,8 @@ async def skip_callback(client: Client, query: CallbackQuery):
             
             await query.message.edit_media(
                 media=InputMediaPhoto(media=photo, caption=message_text),
-                reply_markup=Buttons.get_playback_buttons(bot_me.username)
+                reply_markup=Buttons.get_playback_buttons(bot_me.username),
+                parse_mode="html"
             )
             await query.answer("Skipped! ⏭")
         else:
