@@ -193,7 +193,7 @@ async def play_command(client: Client, message: Message):
                     photo=photo_to_use, 
                     caption=message_text,
                     reply_markup=Buttons.get_playing_buttons(bot_username),
-                    parse_mode="html"
+                    parse_mode="markdown"
                 )
             except Exception:
                 fallback_emoji_map = {
