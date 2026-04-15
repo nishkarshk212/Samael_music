@@ -7,6 +7,9 @@ import bot.queue as queue_manager
 from bot.call import pytgcalls
 import time
 from bot.bot import bot as app
+from config import Config
+import json
+import os
 
 def get_readable_time(seconds: int) -> str:
     count = 0
@@ -28,18 +31,42 @@ def get_readable_time(seconds: int) -> str:
     ping_time += ":".join(time_list)
     return ping_time
 
+CHATS_FILE = "served_chats.json"
+
+def load_chats():
+    if os.path.exists(CHATS_FILE):
+        with open(CHATS_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+def save_chats(chats):
+    with open(CHATS_FILE, "w") as f:
+        json.dump(chats, f)
+
+def add_chat(chat_id, chat_title):
+    chats = load_chats()
+    chat_ids = [c["id"] for c in chats]
+    if chat_id not in chat_ids:
+        chats.append({"id": chat_id, "title": chat_title})
+        save_chats(chats)
+        return True
+    return False
+
 @Client.on_message(filters.new_chat_members)
 async def welcome_handler(client: Client, message: Message):
     for member in message.new_chat_members:
         bot_me = await client.get_me()
         if member.id == bot_me.id:
-            # Bot joined the chat
+            chat_id = message.chat.id
+            chat_title = message.chat.title or "Private Chat"
+            
+            is_new = add_chat(chat_id, chat_title)
+            
             uptime = get_readable_time(int(time.time() - app.start_time))
             bot_username = bot_me.username
             bot_mention = f"[{bot_me.first_name}](tg://user?id={bot_me.id})"
             alive_text = Strings.ALIVE_MSG.format(bot_mention=bot_mention, uptime=uptime)
             
-            # Buttons
             reply_markup = Buttons.get_group_start_buttons(bot_username)
             
             try:
@@ -50,8 +77,21 @@ async def welcome_handler(client: Client, message: Message):
                 )
             except Exception:
                 await message.reply_text(alive_text, reply_markup=reply_markup)
+            
+            if Config.LOG_ID and is_new:
+                try:
+                    from bot.bot import bot
+                    notification = (
+                        f"🤖 **New Group Added!**\n\n"
+                        f"📢 **Group:** {chat_title}\n"
+                        f"🆔 **Chat ID:** `{chat_id}`\n"
+                        f"👥 **Added by:** {message.from_user.first_name if message.from_user else 'Unknown'}\n"
+                        f"📊 **Total Groups:** {len(load_chats())}"
+                    )
+                    await bot.send_message(Config.LOG_ID, notification)
+                except Exception as e:
+                    print(f"Failed to send new group notification: {e}")
         else:
-            # New user joined
             welcome_text = Strings.WELCOME_MSG.format(
                 chat=message.chat.title,
                 user=member.first_name
