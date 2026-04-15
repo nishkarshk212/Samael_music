@@ -153,6 +153,10 @@ async def play_command(client: Client, message: Message):
                         return await m.edit(Strings.get_message_with_fallback(message_text, fallback_emoji_map))
             except Exception as e:
                 try:
+                    await pytgcalls.leave_call(chat_id)
+                except:
+                    pass
+                try:
                     await m.delete()
                     await message.reply_text(Strings.PLAY_ERROR_MSG)
                 except Exception:
@@ -260,6 +264,10 @@ async def play_command(client: Client, message: Message):
                 asyncio.create_task(_download_thumbnail_bg(video_id, title, chat_id, None))
                 
         except Exception as e:
+            try:
+                await pytgcalls.leave_call(chat_id)
+            except:
+                pass
             try:
                 await message.reply_text(Strings.PLAY_ERROR_MSG)
             except Exception:
